@@ -1,0 +1,97 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import Block from './Block';
+import Panel from './Panel';
+import { computeLayout, edgePath, MOBILE_BREAKPOINT } from './layout';
+import './canvas.css';
+
+// A click that ends more than this many pixels from where the pointer went
+// down was a pan, not a tap, so it shouldn't open a block.
+const DRAG_THRESHOLD = 6;
+
+function useIsMobile() {
+  const query = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = (e) => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
+  return isMobile;
+}
+
+// Scale that fits the whole world in the viewport, never zooming in past 1.
+function fitScale(width, height) {
+  const sx = (window.innerWidth - 32) / width;
+  const sy = (window.innerHeight - 96) / height;
+  return Math.min(1, sx, sy);
+}
+
+export default function Canvas({ blocks, edges }) {
+  const isMobile = useIsMobile();
+  const { placed, width, height } = useMemo(() => computeLayout(blocks, isMobile), [blocks, isMobile]);
+  const byId = useMemo(() => Object.fromEntries(placed.map((b) => [b.id, b])), [placed]);
+  const scale = fitScale(width, height);
+
+  const [open, setOpen] = useState(null);
+  const close = useCallback(() => setOpen(null), []);
+
+  const down = useRef(null);
+  const onPointerDown = (e) => {
+    down.current = { x: e.clientX, y: e.clientY };
+  };
+  const onClickCapture = (e) => {
+    if (!down.current) return;
+    const moved = Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y);
+    if (moved > DRAG_THRESHOLD) e.stopPropagation();
+  };
+
+  return (
+    <div className="canvas" onPointerDownCapture={onPointerDown} onClickCapture={onClickCapture}>
+      <TransformWrapper
+        key={isMobile ? 'mobile' : 'desktop'}
+        initialScale={scale}
+        minScale={scale * 0.5}
+        maxScale={2}
+        centerOnInit
+        limitToBounds={false}
+        doubleClick={{ disabled: true }}
+      >
+        {({ zoomIn, zoomOut, centerView }) => (
+          <>
+            <TransformComponent wrapperClass="canvas__viewport">
+              <div className="canvas__world" style={{ width, height }}>
+                <svg className="canvas__edges" width={width} height={height} aria-hidden="true">
+                  {edges.map(([from, to]) => {
+                    const { d, start, end } = edgePath(byId[from], byId[to]);
+                    return (
+                      <g key={`${from}-${to}`}>
+                        <path d={d} />
+                        <circle cx={start.x} cy={start.y} r="4" />
+                        <circle cx={end.x} cy={end.y} r="4" />
+                      </g>
+                    );
+                  })}
+                </svg>
+                {placed.map((b) => (
+                  <Block key={b.id} block={b} onOpen={setOpen} />
+                ))}
+              </div>
+            </TransformComponent>
+
+            <div className="controls" aria-label="Canvas controls">
+              <button type="button" onClick={() => zoomIn()} aria-label="Zoom in">+</button>
+              <button type="button" onClick={() => zoomOut()} aria-label="Zoom out">−</button>
+              <button type="button" onClick={() => centerView(scale)} aria-label="Fit to screen">⤢</button>
+            </div>
+          </>
+        )}
+      </TransformWrapper>
+
+      <p className="hint">Drag to move · pinch or scroll to zoom · tap a block</p>
+
+      {open && <Panel block={open} onClose={close} />}
+    </div>
+  );
+}

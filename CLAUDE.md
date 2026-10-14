@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Personal portfolio site built with Create React App (`react-scripts` 5, React 18), deployed to GitHub Pages. The app is still close to the CRA starter template: `src/App.js` is the single component, and `src/App.test.js` is the only test.
+Personal portfolio site built with Create React App (`react-scripts` 5, React 18), deployed to GitHub Pages. It's styled as a low-code canvas: each section or project is a block you can open. Keep it on Create React App (no Vite migration), and keep the canvas hand-rolled with minimal dependencies (no React Flow).
+
+## Architecture
+
+- `src/data/blocks.js` is the content source: the `blocks` array (id, kind, title, subtitle, a position for each layout, and JSX `content` shown when opened) and `edges` (pairs of block ids). Adding a project means adding a block and an edge here.
+- `src/canvas/Canvas.js` wraps the world in `react-zoom-pan-pinch` (`TransformWrapper`) for pan, zoom and pinch, draws edges as an SVG layer, and positions blocks absolutely. It picks the `pos` layout or the compact `mobilePos` layout at `MOBILE_BREAKPOINT`, and computes the initial scale so the whole world fits. A click capture handler drops clicks that end more than `DRAG_THRESHOLD` px from where the pointer went down, so panning doesn't open blocks.
+- `src/canvas/layout.js` holds the fixed block size (`BLOCK_W`/`BLOCK_H`, which edge geometry depends on) and the edge routing. An edge leaves from the side facing its target along the dominant axis and is drawn as a cubic bezier.
+- `src/canvas/Panel.js` shows an opened block's content: a side drawer on desktop, full screen on phones. Escape or the backdrop closes it.
 
 ## Commands
 
