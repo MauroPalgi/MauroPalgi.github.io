@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { downloadCanvasPdf } from './pdf';
+import { treeOrder } from './layout';
 
-export default function PdfAction({ blocks, onRemove }) {
+// Panel content of the "Download PDF" node: exports every content node on the
+// canvas, in tree order, including the visitor's own edits.
+export default function PdfAction({ nodes }) {
   const [state, setState] = useState('idle'); // idle | busy | error
+  const content = treeOrder(nodes).map((o) => o.node).filter((n) => n.type !== 'pdf');
 
   const download = async () => {
     setState('busy');
     try {
-      await downloadCanvasPdf(blocks);
+      await downloadCanvasPdf(content);
       setState('idle');
     } catch (err) {
       console.error(err);
@@ -18,17 +22,12 @@ export default function PdfAction({ blocks, onRemove }) {
   return (
     <>
       <p>
-        Exports the {blocks.length} blocks currently on the canvas, with
+        Exports the {content.length} nodes currently on the canvas, with
         everything you see when you open them, as a PDF.
       </p>
-      <div className="actions">
-        <button type="button" className="btn btn--primary" onClick={download} disabled={state === 'busy'}>
-          {state === 'busy' ? 'Preparing…' : 'Download PDF'}
-        </button>
-        <button type="button" className="btn" onClick={onRemove}>
-          Remove from canvas
-        </button>
-      </div>
+      <button type="button" className="btn btn--primary" onClick={download} disabled={state === 'busy'}>
+        {state === 'busy' ? 'Preparing…' : 'Download PDF'}
+      </button>
       {state === 'error' && <p className="muted">Something went wrong creating the PDF. Please try again.</p>}
     </>
   );

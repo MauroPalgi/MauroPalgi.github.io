@@ -10,12 +10,12 @@ const project = {
     'dashboard-financiero-personal', // Jupyter Notebook, 2026
   ],
 
-  problem: null,
+  problem: '',
   tools: ['JavaScript', 'Python', 'Jupyter'],
   media: [],
   code: [],
   snippet: null,
-  demo: null,
+  demo: '',
 };
 
 export default project;

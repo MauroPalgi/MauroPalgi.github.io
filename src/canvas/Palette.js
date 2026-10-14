@@ -5,7 +5,7 @@ import nodeTypes from './nodeTypes';
 // collapsible menu on phones. Drag an item onto the canvas to drop it there
 // (pointer events, so it works with touch too), or click/tap it to add it at
 // the center of the view.
-export default function Palette({ onDrop, onAdd, collapsible }) {
+export default function Palette({ onDrop, onAdd, onReset, collapsible }) {
   const [open, setOpen] = useState(!collapsible);
   // Drag bookkeeping lives in a ref so pointer handlers always see the latest
   // values; `ghost` only drives rendering of the preview under the pointer.
@@ -61,32 +61,35 @@ export default function Palette({ onDrop, onAdd, collapsible }) {
           <>
             <p className="palette__hint">Drag onto the canvas, or tap to add</p>
             <ul className="palette__list">
-              {Object.entries(nodeTypes).map(([type, node]) => (
+              {Object.entries(nodeTypes).filter(([, t]) => t.palette).map(([type, t]) => (
                 <li key={type}>
                   <button
                     type="button"
-                    className={`palette__item block--${node.kind}`}
+                    className={`palette__item block--${type}`}
                     onPointerDown={(e) => onPointerDown(e, type)}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerCancel}
                     onClick={() => add(type)}
                   >
-                    <span className="block__kind">{node.kind}</span>
-                    <span className="palette__title">{node.title}</span>
-                    <span className="palette__subtitle">{node.subtitle}</span>
+                    <span className="block__kind">{t.label}</span>
+                    <span className="palette__title">{t.defaults.title}</span>
+                    <span className="palette__subtitle">{t.defaults.subtitle}</span>
                   </button>
                 </li>
               ))}
             </ul>
+            <button type="button" className="btn palette__reset" onClick={onReset}>
+              Reset canvas
+            </button>
           </>
         )}
       </aside>
 
       {ghost && (
-        <div className="palette__ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
-          <span className="block__kind">{nodeTypes[ghost.type].kind}</span>
-          <span className="palette__title">{nodeTypes[ghost.type].title}</span>
+        <div className={`palette__ghost block--${ghost.type}`} style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
+          <span className="block__kind">{nodeTypes[ghost.type].label}</span>
+          <span className="palette__title">{nodeTypes[ghost.type].defaults.title}</span>
         </div>
       )}
     </>

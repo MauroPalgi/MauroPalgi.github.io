@@ -8,12 +8,12 @@ const project = {
     'stellaris-destroyer', // Rust, 2026
   ],
 
-  problem: null,
+  problem: '',
   tools: ['Rust'],
   media: [],
   code: [],
   snippet: null,
-  demo: null,
+  demo: '',
 };
 
 export default project;

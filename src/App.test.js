@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import App from './App';
-import projects from './projects';
+import { initialNodes } from './data/diagram';
 
 beforeAll(() => {
   window.matchMedia = window.matchMedia || ((query) => ({
@@ -11,46 +11,65 @@ beforeAll(() => {
   }));
 });
 
-test('renders a block for each section', () => {
+const nodeButton = (title) => screen.getByRole('button', { name: new RegExp(`^\\w+ ${title}`) });
+const paletteItem = (container, type) => container.querySelector(`.palette__item.block--${type}`);
+
+test('renders a node for every node in the diagram', () => {
   render(<App />);
-  for (const title of ['Mauro Palgi', 'About', 'Experience', 'Skills', 'Contact', 'Projects']) {
-    expect(screen.getByRole('button', { name: new RegExp(title) })).toBeInTheDocument();
+  for (const node of initialNodes) {
+    expect(nodeButton(node.title)).toBeInTheDocument();
   }
 });
 
-test('renders a block for each project and opens its case study', () => {
+test('opens a node in a panel and closes it with Escape', () => {
   render(<App />);
-  for (const project of projects) {
-    expect(screen.getByRole('button', { name: new RegExp(project.title) })).toBeInTheDocument();
-  }
-
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(projects[0].title) }));
-  const dialog = screen.getByRole('dialog');
-  expect(dialog).toHaveTextContent(projects[0].tools[0]);
-  expect(dialog).toHaveTextContent(/in progress/);
-});
-
-test('opens a block in a panel and closes it with Escape', () => {
-  render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /Contact/ }));
+  fireEvent.click(nodeButton('Contact'));
   expect(screen.getByRole('dialog')).toHaveTextContent('mauro.palgi@gmail.com');
 
   fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
-test('adds a PDF node from the palette and opens its actions', () => {
+test('adds a text node from the palette and configures it', () => {
   const { container } = render(<App />);
-  expect(container.querySelector('.block.block--action')).toBeNull();
+  fireEvent.click(paletteItem(container, 'text'));
 
-  fireEvent.click(container.querySelector('.palette__item'));
-  const node = container.querySelector('.block.block--action');
-  expect(node).toHaveTextContent('Download PDF');
+  // A new node opens straight into its edit form.
+  const dialog = screen.getByRole('dialog');
+  fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Hobbies' } });
+  fireEvent.change(within(dialog).getByLabelText('Text'), { target: { value: 'Game jams and pixel art.' } });
+  fireEvent.change(within(dialog).getByLabelText('Connected to'), { target: { value: 'about' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
 
-  fireEvent.click(node);
+  expect(dialog).toHaveTextContent('Game jams and pixel art.');
+  expect(nodeButton('Hobbies')).toBeInTheDocument();
+});
+
+test('edits a list node', () => {
+  render(<App />);
+  fireEvent.click(nodeButton('Skills'));
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Edit' }));
+  fireEvent.change(within(dialog).getByLabelText('Items'), { target: { value: 'Rust\nGodot' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+
+  expect(within(dialog).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Rust', 'Godot']);
+});
+
+test('deletes a node, and Reset brings it back', () => {
+  render(<App />);
+  fireEvent.click(nodeButton('Education'));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete node' }));
+  expect(screen.queryByRole('button', { name: /Education/ })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Reset canvas' }));
+  expect(nodeButton('Education')).toBeInTheDocument();
+});
+
+test('the PDF node offers a download', () => {
+  const { container } = render(<App />);
+  fireEvent.click(paletteItem(container, 'pdf'));
   const dialog = screen.getByRole('dialog');
   expect(within(dialog).getByRole('button', { name: 'Download PDF' })).toBeInTheDocument();
-
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Remove from canvas' }));
-  expect(container.querySelector('.block.block--action')).toBeNull();
+  expect(within(dialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
 });

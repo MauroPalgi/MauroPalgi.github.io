@@ -1,8 +1,8 @@
 import Canvas from './canvas/Canvas';
-import { blocks, edges } from './data/blocks';
+import { initialNodes } from './data/diagram';
 
 function App() {
-  return <Canvas blocks={blocks} edges={edges} />;
+  return <Canvas initialNodes={initialNodes} />;
 }
 
 export default App;

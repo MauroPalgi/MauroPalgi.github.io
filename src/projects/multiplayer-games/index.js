@@ -12,12 +12,12 @@ const project = {
     'TopDownOnline', // 2026
   ],
 
-  problem: null,
+  problem: '',
   tools: ['Unity', 'C#', 'Mirror', 'WebRTC'],
   media: [],
   code: [],
   snippet: null,
-  demo: null,
+  demo: '',
 };
 
 export default project;

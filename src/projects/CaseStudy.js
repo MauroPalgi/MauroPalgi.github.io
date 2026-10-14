@@ -1,7 +1,12 @@
-// Panel content for a project block. Renders the sections of a project file
-// (see _template/index.js), skipping any that are empty.
+import { clean, linkFor } from '../canvas/content';
+
+// Panel content for a project node. Renders the sections of a project (see
+// _template/index.js), skipping any that are empty.
 export default function CaseStudy({ project }) {
-  const { status, problem, tools, media, code, snippet, demo } = project;
+  const { status, problem, media = [], snippet } = project;
+  const tools = clean(project.tools);
+  const code = clean(project.code).map(linkFor).filter(Boolean);
+  const demo = project.demo && linkFor(project.demo.trim());
 
   return (
     <>
@@ -9,10 +14,10 @@ export default function CaseStudy({ project }) {
         <p className="draft-note">Case study in progress. More details coming soon.</p>
       )}
 
-      {problem && (
+      {problem?.trim() && (
         <section>
           <h3>Problem</h3>
-          {typeof problem === 'string' ? <p>{problem}</p> : problem}
+          {problem.split(/\n\s*\n/).map((p, i) => <p key={i}>{p.trim()}</p>)}
         </section>
       )}
 
@@ -56,7 +61,7 @@ export default function CaseStudy({ project }) {
       {demo && (
         <section>
           <h3>Demo</h3>
-          <p><a href={demo} target="_blank" rel="noopener noreferrer">Open the live demo</a></p>
+          <p><a href={demo.href} target="_blank" rel="noopener noreferrer">Open the live demo</a></p>
         </section>
       )}
     </>

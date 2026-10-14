@@ -1,7 +1,9 @@
-// Builds a text PDF from the blocks currently on the canvas. Each block's JSX
-// content is rendered to static HTML and walked into headings, paragraphs and
-// lists. jsPDF and react-dom/server are loaded on demand to keep them out of
-// the main bundle.
+// Builds a text PDF from the nodes currently on the canvas. Each node is
+// rendered with its type's `render` (the same content as its panel) to static
+// HTML, then walked into headings, paragraphs and lists. jsPDF and
+// react-dom/server are loaded on demand to keep them out of the main bundle.
+
+import nodeTypes from './nodeTypes';
 
 const PAGE_MARGIN = 20; // mm
 const LINE = 1.45; // line height factor
@@ -19,7 +21,7 @@ function sanitize(text) {
     .trim();
 }
 
-export async function buildCanvasPdf(blocks) {
+export async function buildCanvasPdf(nodes) {
   const [{ jsPDF }, { renderToStaticMarkup }] = await Promise.all([
     import('jspdf'),
     import('react-dom/server'),
@@ -67,16 +69,16 @@ export async function buildCanvasPdf(blocks) {
     }
   };
 
-  for (const block of blocks) {
-    if (block.kind === 'profile') {
-      write(block.title, { size: 22, style: 'bold', gap: 1 });
-      write(block.subtitle, { size: 12, color: 90, gap: 4 });
+  for (const node of nodes) {
+    if (node.type === 'profile') {
+      write(node.title || '', { size: 22, style: 'bold', gap: 1 });
+      write(node.subtitle || '', { size: 12, color: 90, gap: 4 });
     } else {
       y += 4;
-      write(block.title, { size: 16, style: 'bold', gap: 0.5 });
-      write(block.subtitle, { size: 10, color: 110, gap: 2.5 });
+      write(node.title || 'Untitled', { size: 16, style: 'bold', gap: 0.5 });
+      write(node.subtitle || '', { size: 10, color: 110, gap: 2.5 });
     }
-    const html = renderToStaticMarkup(<>{block.content}</>);
+    const html = renderToStaticMarkup(<>{nodeTypes[node.type].render(node)}</>);
     walk(new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html').body.firstChild);
   }
 
@@ -92,7 +94,7 @@ export async function buildCanvasPdf(blocks) {
   return doc;
 }
 
-export async function downloadCanvasPdf(blocks) {
-  const doc = await buildCanvasPdf(blocks);
+export async function downloadCanvasPdf(nodes) {
+  const doc = await buildCanvasPdf(nodes);
   doc.save('mauro-palgi-portfolio.pdf');
 }

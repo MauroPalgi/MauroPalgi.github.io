@@ -1,6 +1,6 @@
 # Projects
 
-Each folder here is one case study, shown as a block under **Projects** on the canvas.
+Each folder here is one case study, shown as a `project` node under **Projects** on the canvas.
 
 ## Add a project
 
@@ -15,6 +15,6 @@ Each folder here is one case study, shown as a block under **Projects** on the c
 4. Import it in `index.js` and add it to the `projects` array.
 5. When it's ready, set `status: 'published'` to remove the "in progress" note.
 
-Block positions and connections are computed automatically, two per row under the Projects block.
+Positions and connection lines are generated automatically under the Projects node.
 
-Only link public repos in `code`. Private repos go in `sourceRepos`, which is for your reference and never shown.
+`code` takes public repo URLs, one per entry. Private repos go in `sourceRepos`, which is for your reference and never shown.
