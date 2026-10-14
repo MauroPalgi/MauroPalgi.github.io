@@ -4,6 +4,7 @@ import Block from './Block';
 import NodePanel from './NodePanel';
 import Palette from './Palette';
 import nodeTypes from './nodeTypes';
+import { loadSaved, saveCanvas, clearSaved } from './storage';
 import { autoLayout, edgePath, padding, worldSize, BLOCK_W, BLOCK_H, MOBILE_BREAKPOINT } from './layout';
 import './canvas.css';
 
@@ -42,6 +43,11 @@ function initialView(nodes, isMobile, sidebar) {
   return { scale, x: (availW - width * scale) / 2, y: (window.innerHeight - height * scale) / 2 };
 }
 
+// Next free number for ids of nodes added from the palette (`text-3`, ...).
+function nextFreeId(nodes) {
+  return 1 + Math.max(0, ...nodes.map((n) => Number(/-(\d+)$/.exec(n.id)?.[1]) || 0));
+}
+
 export default function Canvas({ initialNodes }) {
   const isMobile = useIsMobile();
   const sidebar = isMobile ? 0 : SIDEBAR_W;
@@ -49,7 +55,16 @@ export default function Canvas({ initialNodes }) {
   const posKey = isMobile ? 'mobilePos' : 'pos';
 
   const startNodes = useMemo(() => autoLayout(initialNodes), [initialNodes]);
-  const [nodes, setNodes] = useState(startNodes);
+
+  // A canvas saved in this browser replaces the starting diagram on load.
+  // `savedNodes` is the last saved state; any other `nodes` value is unsaved.
+  const [savedNodes, setSavedNodes] = useState(() => loadSaved(initialNodes));
+  const [nodes, setNodes] = useState(() => savedNodes || startNodes);
+  const [saveFailed, setSaveFailed] = useState(false);
+  let saveState = 'clean';
+  if (saveFailed) saveState = 'failed';
+  else if (savedNodes) saveState = nodes === savedNodes ? 'saved' : 'unsaved';
+  else if (nodes !== startNodes) saveState = 'unsaved';
   const view = initialView(startNodes, isMobile, sidebar);
 
   // Nodes with their rendered position in the current layout.
@@ -65,7 +80,8 @@ export default function Canvas({ initialNodes }) {
   const openNode = nodes.find((n) => n.id === open?.id);
 
   const transform = useRef(null);
-  const nextId = useRef(1);
+  const nextId = useRef(null);
+  if (nextId.current === null) nextId.current = nextFreeId(nodes);
 
   const updateNode = (id, patch) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, ...patch } : n)));
 
@@ -82,7 +98,31 @@ export default function Canvas({ initialNodes }) {
     close();
   };
 
+  const save = () => {
+    const ok = saveCanvas(initialNodes, nodes);
+    setSaveFailed(!ok);
+    if (ok) setSavedNodes(nodes);
+  };
+
+  // Ctrl/Cmd+S saves. The ref keeps the listener on the latest `save`.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const reset = () => {
+    if (savedNodes && !window.confirm('Reset the canvas to the original? The copy saved in this browser will be deleted.')) return;
+    clearSaved();
+    setSavedNodes(null);
+    setSaveFailed(false);
     setNodes(startNodes);
     close();
   };
@@ -172,6 +212,8 @@ export default function Canvas({ initialNodes }) {
         onDrop={(type, cx, cy) => addNode(type, toContent(cx, cy))}
         onAdd={(type) => addNode(type, toContent(sidebar + (window.innerWidth - sidebar) / 2, window.innerHeight / 2))}
         onReset={reset}
+        onSave={save}
+        saveState={saveState}
       />
 
       <p className="hint">Drag to pan · pinch or scroll to zoom · tap a node · ⠿ moves it</p>

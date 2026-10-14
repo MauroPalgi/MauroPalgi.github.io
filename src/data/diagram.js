@@ -24,14 +24,25 @@ export const initialNodes = [
     body: 'My objective is to deliver high-quality software by developing robust applications, improving existing systems, and implementing solutions that enhance performance and user experience.',
   },
   {
+    id: 'academic',
+    type: 'list',
+    parent: 'about',
+    title: 'Academic background',
+    subtitle: 'ORT University',
+    style: 'bullets',
+    items: [
+      'Data Analyst, ORT University',
+      'Analyst Programmer, ORT University (2019 – present)',
+    ],
+  },
+  {
     id: 'education',
     type: 'list',
     parent: 'about',
     title: 'Education',
-    subtitle: 'ORT · BIOS · UTU Maldonado',
+    subtitle: 'BIOS · UTU Maldonado',
     style: 'bullets',
     items: [
-      'ORT University, Analyst Programmer (2019 – present)',
       'BIOS, Administrative Accounting Assistant (2017)',
       'UTU Maldonado, High School Degree in Computer Science (2004 – 2006)',
     ],

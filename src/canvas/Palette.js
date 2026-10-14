@@ -5,7 +5,14 @@ import nodeTypes from './nodeTypes';
 // collapsible menu on phones. Drag an item onto the canvas to drop it there
 // (pointer events, so it works with touch too), or click/tap it to add it at
 // the center of the view.
-export default function Palette({ onDrop, onAdd, onReset, collapsible }) {
+const SAVE_STATUS = {
+  clean: 'Changes last until you reload. Save to keep them.',
+  unsaved: 'Unsaved changes',
+  saved: 'Saved in this browser',
+  failed: "Couldn't save: this browser is blocking storage.",
+};
+
+export default function Palette({ onDrop, onAdd, onReset, onSave, saveState, collapsible }) {
   const [open, setOpen] = useState(!collapsible);
   // Drag bookkeeping lives in a ref so pointer handlers always see the latest
   // values; `ghost` only drives rendering of the preview under the pointer.
@@ -53,6 +60,7 @@ export default function Palette({ onDrop, onAdd, onReset, collapsible }) {
         {collapsible ? (
           <button type="button" className="palette__toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
             {open ? 'Nodes ▴' : '+ Nodes'}
+            {!open && saveState === 'unsaved' && <span className="palette__dot" title="Unsaved changes" />}
           </button>
         ) : (
           <h2 className="palette__heading">Nodes</h2>
@@ -79,6 +87,19 @@ export default function Palette({ onDrop, onAdd, onReset, collapsible }) {
                 </li>
               ))}
             </ul>
+            <div className="palette__save">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={onSave}
+                disabled={saveState === 'clean' || saveState === 'saved'}
+              >
+                Save to this browser
+              </button>
+              <p className={`palette__status palette__status--${saveState}`} role="status">
+                {SAVE_STATUS[saveState]}
+              </p>
+            </div>
             <button type="button" className="btn palette__reset" onClick={onReset}>
               Reset canvas
             </button>

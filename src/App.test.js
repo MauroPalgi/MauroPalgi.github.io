@@ -11,6 +11,10 @@ beforeAll(() => {
   }));
 });
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 const nodeButton = (title) => screen.getByRole('button', { name: new RegExp(`^\\w+ ${title}`) });
 const paletteItem = (container, type) => container.querySelector(`.palette__item.block--${type}`);
 
@@ -72,4 +76,45 @@ test('the PDF node offers a download', () => {
   const dialog = screen.getByRole('dialog');
   expect(within(dialog).getByRole('button', { name: 'Download PDF' })).toBeInTheDocument();
   expect(within(dialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+});
+
+test('saves the canvas to the browser and restores it on the next visit', () => {
+  const first = render(<App />);
+  const saveButton = screen.getByRole('button', { name: 'Save to this browser' });
+  expect(saveButton).toBeDisabled();
+
+  fireEvent.click(nodeButton('Strengths'));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete node' }));
+  expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes');
+
+  fireEvent.click(saveButton);
+  expect(screen.getByRole('status')).toHaveTextContent('Saved in this browser');
+  first.unmount();
+
+  render(<App />);
+  expect(screen.queryByRole('button', { name: /Strengths/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Saved in this browser');
+});
+
+test('Reset asks before deleting a saved canvas', () => {
+  render(<App />);
+  fireEvent.click(nodeButton('Strengths'));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete node' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save to this browser' }));
+
+  window.confirm = jest.fn(() => false);
+  fireEvent.click(screen.getByRole('button', { name: 'Reset canvas' }));
+  expect(window.confirm).toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: /Strengths/ })).not.toBeInTheDocument();
+
+  window.confirm = jest.fn(() => true);
+  fireEvent.click(screen.getByRole('button', { name: 'Reset canvas' }));
+  expect(nodeButton('Strengths')).toBeInTheDocument();
+  expect(window.localStorage.getItem('portfolio-canvas')).toBeNull();
+});
+
+test('ignores a saved canvas from an older version of the site', () => {
+  window.localStorage.setItem('portfolio-canvas', JSON.stringify({ version: 1, base: 'old', nodes: [] }));
+  render(<App />);
+  expect(nodeButton('Academic background')).toBeInTheDocument();
 });
