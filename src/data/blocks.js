@@ -33,7 +33,6 @@ export const blocks = [
           pipelines. This portfolio is a canvas: each block is a part of my
           work you can open.
         </p>
-        <p>Drag to move around, pinch or scroll to zoom, tap a block to open it.</p>
       </>
     ),
   },

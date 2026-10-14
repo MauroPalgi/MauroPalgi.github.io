@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import App from './App';
 import projects from './projects';
 
@@ -37,4 +37,20 @@ test('opens a block in a panel and closes it with Escape', () => {
 
   fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+test('adds a PDF node from the palette and opens its actions', () => {
+  const { container } = render(<App />);
+  expect(container.querySelector('.block.block--action')).toBeNull();
+
+  fireEvent.click(container.querySelector('.palette__item'));
+  const node = container.querySelector('.block.block--action');
+  expect(node).toHaveTextContent('Download PDF');
+
+  fireEvent.click(node);
+  const dialog = screen.getByRole('dialog');
+  expect(within(dialog).getByRole('button', { name: 'Download PDF' })).toBeInTheDocument();
+
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Remove from canvas' }));
+  expect(container.querySelector('.block.block--action')).toBeNull();
 });

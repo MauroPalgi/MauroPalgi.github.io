@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 // Detail view for an opened block: a side drawer on desktop, full screen on
 // phones (see .panel in canvas.css).
-export default function Panel({ block, onClose }) {
+export default function Panel({ block, onClose, children }) {
   const closeRef = useRef(null);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function Panel({ block, onClose }) {
             ×
           </button>
         </header>
-        <div className="panel__body">{block.content}</div>
+        <div className="panel__body">{children}</div>
       </aside>
     </>
   );
