@@ -8,7 +8,8 @@ Personal portfolio site built with Create React App (`react-scripts` 5, React 18
 
 ## Architecture
 
-- `src/data/blocks.js` is the content source: the `blocks` array (id, kind, title, subtitle, a position for each layout, and JSX `content` shown when opened) and `edges` (pairs of block ids). Adding a project means adding a block and an edge here.
+- `src/data/blocks.js` builds the canvas content: the `blocks` array (id, kind, title, subtitle, a position for each layout, and JSX `content` shown when opened) and `edges` (pairs of block ids). The profile and resume blocks are written by hand. Project blocks, their positions (two per row under Projects) and their edges are generated from `src/projects`.
+- `src/projects/<id>/index.js` holds one case study (problem, tools, media, code, snippet, demo, `status`), and `src/projects/index.js` registers them in canvas order. To add a project, copy `_template/` (see `src/projects/README.md`). `CaseStudy.js` renders a project in the panel and hides empty sections. `sourceRepos` lists the private repos a case study is based on and is never rendered, so only link public repos in `code`.
 - `src/canvas/Canvas.js` wraps the world in `react-zoom-pan-pinch` (`TransformWrapper`) for pan, zoom and pinch, draws edges as an SVG layer, and positions blocks absolutely. It picks the `pos` layout or the compact `mobilePos` layout at `MOBILE_BREAKPOINT`, and computes the initial scale so the whole world fits. A click capture handler drops clicks that end more than `DRAG_THRESHOLD` px from where the pointer went down, so panning doesn't open blocks.
 - `src/canvas/layout.js` holds the fixed block size (`BLOCK_W`/`BLOCK_H`, which edge geometry depends on) and the edge routing. An edge leaves from the side facing its target along the dominant axis and is drawn as a cubic bezier.
 - `src/canvas/Panel.js` shows an opened block's content: a side drawer on desktop, full screen on phones. Escape or the backdrop closes it.

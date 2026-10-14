@@ -1,8 +1,22 @@
-// Every block on the canvas. To ship a new project, add a block here and
-// connect it with an entry in `edges`.
+import projects from '../projects';
+import CaseStudy from '../projects/CaseStudy';
+
+// Every block on the canvas. Project blocks are generated from src/projects
+// (see src/projects/README.md); the rest are defined here.
 //
 // `pos` is the block's top-left corner on wide screens, `mobilePos` on narrow
 // ones. Units are canvas pixels; see BLOCK_W / BLOCK_H in src/canvas/layout.js.
+
+const PROJECTS_POS = { x: 440, y: 480 };
+const PROJECTS_MOBILE_POS = { x: 130, y: 540 };
+
+// Project blocks sit two per row under the Projects block, in both layouts.
+function projectPos(parent, i) {
+  return {
+    x: parent.x + (i % 2 === 0 ? -130 : 130),
+    y: parent.y + 180 * (Math.floor(i / 2) + 1),
+  };
+}
 
 export const blocks = [
   {
@@ -120,17 +134,25 @@ export const blocks = [
     id: 'projects',
     kind: 'collection',
     title: 'Projects',
-    subtitle: 'Case studies coming soon',
-    placeholder: true,
-    pos: { x: 440, y: 480 },
-    mobilePos: { x: 130, y: 540 },
+    subtitle: `${projects.length} case studies`,
+    pos: PROJECTS_POS,
+    mobilePos: PROJECTS_MOBILE_POS,
     content: (
       <p>
-        Finished projects will appear here as their own blocks, each with the
-        problem, the tools, screenshots, code and a live demo.
+        Each project below is its own block, with the problem, the tools,
+        screenshots, code and a live demo. Tap one on the canvas to open it.
       </p>
     ),
   },
+  ...projects.map((project, i) => ({
+    id: project.id,
+    kind: 'project',
+    title: project.title,
+    subtitle: project.subtitle,
+    pos: projectPos(PROJECTS_POS, i),
+    mobilePos: projectPos(PROJECTS_MOBILE_POS, i),
+    content: <CaseStudy project={project} />,
+  })),
 ];
 
 export const edges = [
@@ -139,4 +161,6 @@ export const edges = [
   ['about', 'skills'],
   ['experience', 'contact'],
   ['me', 'projects'],
+  // The first row hangs off Projects; each later block hangs off the one above.
+  ...projects.map((p, i) => [i < 2 ? 'projects' : projects[i - 2].id, p.id]),
 ];
